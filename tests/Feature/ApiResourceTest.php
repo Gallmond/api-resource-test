@@ -35,9 +35,7 @@ class ApiResourceTest extends TestCase
         ];
         $response = $this->json('POST', route('posts.store'), $request);
         $response->assertStatus(201);
-        dd($response->json(), $response->getStatusCode());
-        
-        assertArrayHasKey('data', $response->json('data'));
+        assertArrayHasKey('data', $response->json());
 
 
         //READ

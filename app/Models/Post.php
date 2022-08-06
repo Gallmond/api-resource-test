@@ -18,6 +18,12 @@ class Post extends Model
         'user_id',
     ];
 
+    protected $hidden = [
+        'analytics_views',
+        'analytics_favourites',
+        'analytics_dislikes',
+    ];
+
     public function author(): HasOne
     {
         return $this->hasOne(User::class, 'id', 'user_id');
