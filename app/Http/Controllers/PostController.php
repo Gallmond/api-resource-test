@@ -6,6 +6,7 @@ use App\Models\Post;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Resources\PostResource;
+use App\Models\PostAnalytics;
 
 class PostController extends Controller
 {
@@ -33,6 +34,16 @@ class PostController extends Controller
         $data['user_id'] = $user->id;
 
         $post = Post::create($data);
+
+        if($data['analytics']){
+            PostAnalytics::find( $post->id )
+                ->update($data['analytics']);
+        }
+
+        if($request->has('with')){
+            $post->load($request->get('with'));
+        }
+
         return (new PostResource($post))
             ->toResponse($request)
             ->setStatusCode(201);

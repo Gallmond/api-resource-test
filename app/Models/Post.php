@@ -12,26 +12,47 @@ class Post extends Model
     
     protected $table = 'posts';
 
+    /**
+     * These are the fields that can be filled in by the CRUD endpoints
+     *
+     * @var array
+     */
     protected $fillable = [
         'title',
         'content',
         'user_id',
     ];
 
+    /**
+     * These are the fields that will not be returned when this model is 
+     * serialised to JSON
+     *
+     * @var array
+     */
     protected $hidden = [
         'analytics_views',
         'analytics_favourites',
         'analytics_dislikes',
     ];
 
+    /**
+     * Who created this post
+     *
+     * @return HasOne
+     */
     public function author(): HasOne
     {
         return $this->hasOne(User::class, 'id', 'user_id');
     }
 
+    /**
+     * The analytics model for this post (actualy the same table row)
+     *
+     * @return HasOne
+     */
     public function analytics(): HasOne
     {
-        return $this->hasOne(Post::class, 'id', 'id');
+        return $this->hasOne(PostAnalytics::class, 'id', 'id');
     }
 
 }

@@ -3,7 +3,7 @@
 namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Helpers\Str;
+use App\Helpers\StringHelper;
 
 class PostResource extends JsonResource
 {
@@ -15,6 +15,6 @@ class PostResource extends JsonResource
      */
     public function toArray($request)
     {
-        return Str::camelArrayKeys( parent::toArray($request) );
+        return StringHelper::camelArrayKeys( parent::toArray($request) );
     }
 }

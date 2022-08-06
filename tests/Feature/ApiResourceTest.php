@@ -30,12 +30,23 @@ class ApiResourceTest extends TestCase
         $request = [
             'data' => [
                 'title' => 'cool title',
-                'content' => 'cool content'
+                'content' => 'cool content',
+                'analytics' => [
+                    'analytics_views' => 1,
+                    'analytics_favourites' => 2,
+                    'analytics_dislikes' => 3,
+                ]
+            ],
+            'with' => [
+                'analytics'
             ]
+
         ];
         $response = $this->json('POST', route('posts.store'), $request);
         $response->assertStatus(201);
         assertArrayHasKey('data', $response->json());
+
+        dump($response->json());
 
 
         //READ

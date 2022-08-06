@@ -4,7 +4,7 @@ namespace App\Helpers;
 
 use Illuminate\Support\Str as SupportStr;
 
-class Str extends SupportStr{
+class StringHelper extends SupportStr{
 
   public static function camelArrayKeys(array $array, bool $recursive = true): array
   {
@@ -12,7 +12,7 @@ class Str extends SupportStr{
 
     foreach($array as $key => $value){
       if($recursive && is_array($value)){
-        $value = self::camelKeys( $value );
+        $value = self::camelArrayKeys( $value );
       }
 
       $formatted[ self::camel( $key ) ] = $value;
