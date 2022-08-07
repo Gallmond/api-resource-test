@@ -2,6 +2,8 @@
 
 namespace App\Http;
 
+use App\Http\Middleware\SnakeToCamelCaseInputKeysMiddleware;
+use App\Http\Middleware\SnakeToCamelCaseMiddleware;
 use Illuminate\Foundation\Http\Kernel as HttpKernel;
 
 class Kernel extends HttpKernel
@@ -21,6 +23,7 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        SnakeToCamelCaseInputKeysMiddleware::class,
     ];
 
     /**

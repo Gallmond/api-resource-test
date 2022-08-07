@@ -35,11 +35,6 @@ class Post extends Model
         'analytics_dislikes',
     ];
 
-    protected array $hasRelations = [
-        'author' => User::class,
-        'analytics' => PostAnalytics::class,
-    ];
-
     /**
      * Who created this post
      *

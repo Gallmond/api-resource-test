@@ -30,21 +30,17 @@ class PostController extends Controller
     {
         $user = Auth::guard('api')->user();
 
-        $data = $request->get('data');
+        $data = $request->input('data');
         $data['user_id'] = $user->id;
 
         $post = Post::create( $data );
 
         if($data['analytics']){
-            PostAnalytics::find( $post->id )
-                ->update($data['analytics']);
+            PostAnalytics::find( $post->id )->update($data['analytics']);
         }
 
         if($request->has('with')){
-            $post->load(array_intersect(
-                $request->get('with'),
-                Post::getRelations(),
-            ));
+            $post->load($request->input('with'));
         }
 
         return (new PostResource($post))
@@ -60,15 +56,12 @@ class PostController extends Controller
      */
     public function show(Request $request, $id)
     {
+        $post = Post::findOrFail( $id );
 
-        $relations = array_intersect(
-            $request->get('with', []),
-            Post::getRelations(),
-        );
+        if($request->has('with')){
+            $post->load( $request->input('with') );
+        }
 
-        $post = Post::with( $relations )
-            ->findOrFail( $id );
-        
         return (new PostResource($post))
             ->toResponse($request)
             ->setStatusCode(200);
@@ -83,29 +76,22 @@ class PostController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $relations = array_intersect(
-            $request->get('with', []),
-            Post::getRelations(),
-        );
+        $post = Post::findOrFail( $id );
 
-        $post = Post::with( $relations )->findOrFail( $id );
-
-        $data = $request->get('data', []);
-
-        $post->update( array_intersect_key( Post::getFillable(), $data) );
+        $post->updateOrFail( $request->input('data') );
         
-        // update relations if set?
-        if($data['analytics']){
+        if($request->has('data.analytics')){
             PostAnalytics::findOrFail( $post->id )
-                ->update(array_intersect_key(
-                    PostAnalytics::getFillable(),
-                    $data['analytics']
-                ));
+                ->updateOrFail($request->input('data.analytics'));
+        }
+
+        if($request->has('with')){
+            $post->load( $request->input('with') );
         }
 
         return (new PostResource($post))
             ->toResponse($request)
-            ->setStatusCode(201);
+            ->setStatusCode(200);
     }
 
     /**
@@ -119,7 +105,7 @@ class PostController extends Controller
         Post::findOrFail( $id )->delete();
 
         return response()
-            ->json(['success' => true])
+            ->json(['data' => ['success' => true]])
             ->setStatusCode(200);
     }
 

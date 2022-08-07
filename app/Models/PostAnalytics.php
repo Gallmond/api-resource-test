@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Traits\ModelAutoCRUDTrait;
 use Database\Factories\PostAnalyticsFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,18 +17,21 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class PostAnalytics extends Model
 {
     use HasFactory;
-    use ModelAutoCRUDTrait;
 
     protected $factory = PostAnalyticsFactory::class;
 
     protected $table = 'posts';
 
-    protected array $hasRelations = ['post'];
-
     protected $fillable = [
         'analytics_views',
         'analytics_favourites',
         'analytics_dislikes',
+    ];
+
+    protected $casts = [
+        'analytics_views' => 'integer',
+        'analytics_favourites' => 'integer',
+        'analytics_dislikes' => 'integer',
     ];
 
     // hide user post cols
