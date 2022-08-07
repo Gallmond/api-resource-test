@@ -11,10 +11,8 @@ use Illuminate\Support\Facades\Auth;
  * This class should be implemented per Model.
  * 
  * Set the $model property to the full className of the model.
- * Set the $modelRelations to a name => className k pair array.
+ * Set the $modelRelations to a name => className key pair array.
  * 
- * //TODO refactor this it should not rely on the request itself
- * - change to use data input
  */
 abstract class AutoCrudRepo {
 
@@ -80,32 +78,47 @@ abstract class AutoCrudRepo {
 
   protected function updateRelatedModels(): void
   {
+    /** @var Model $class */
     foreach($this->modelRelations as $name => $class){
       if(!$this->request->has("data.$name")){
         continue;
       }
 
-      assert($class instanceof Model);
-      assert($this->instance instanceof Model);
-
-      $relationKeyName = (new $class)->getKeyName();
-
-      if(!$this->request->has("data.$name.$relationKeyName")){
-        throw new Exception('Cannot update relation with out id');
-      }
-
       $relationData = $this->request->input("data.$name");
 
-      $identifiedBy = [
-        $this->instance->getKeyName() => $this->instance->getKey(),
-        $relationKeyName => $relationData[ $relationKeyName ]
-      ];
-          
-      $related = $class::updateOrCreate($identifiedBy, $relationData);
-      if(!$related->exists){
-        throw new Exception('Could not update relation');
+      if(array_is_list($relationData)){
+        foreach($relationData as $datum){
+          $this->updateRelatedModel( $class, $datum );
+        }
+      }else{
+        $this->updateRelatedModel($class, $relationData);
       }
     }
+  }
+
+  protected function updateRelatedModel(string $class, array $data): Model
+  {
+    $relationKeyName = (new $class)->getKeyName();
+    $relationKeyValue = $data[ $relationKeyName ] ?? null;
+
+    if(!$relationKeyValue){
+      throw new Exception("Cannot update relation without $relationKeyName");
+    }
+
+    $identifiedBy = [
+      $this->instance->getKeyName() => $this->instance->getKey(),
+      $relationKeyName => $relationKeyValue,
+    ];
+
+    $data = array_merge($identifiedBy, $data);
+    dump('updateRelatedModel $data', $data);
+        
+    $createdOrUpdated = $class::updateOrCreate($identifiedBy, $data);
+    if(!$createdOrUpdated->exists){
+      throw new Exception("Could not create or update $class");
+    }
+
+    return $createdOrUpdated;
   }
 
   protected function createPrimaryModel(): Model
@@ -125,17 +138,31 @@ abstract class AutoCrudRepo {
       assert($class instanceof Model);
       $data = $this->request->input(  "data.$name" );
 
-      // if the table is the same table as the parent, update don't create
-      $instanceTable = $this->instance->getTable();
-      $relatedTable = (new $class())->getTable();
-      if($instanceTable === $relatedTable){
-        $created[ $class ] = $class::findOrFail( $this->instance->id )->update( $data );
+      if(array_is_list($data)){
+        foreach($data as $datum){
+          $created[] = $this->createRelatedModel( $class, $datum );
+        }
       }else{
-        $created[ $class ] = $class::create( $data );
+        $created[] = $this->createRelatedModel( $class, $data );
       }
       
     }
     return $created;
+  }
+
+  public function createRelatedModel(string $class, array $data): Model
+  {
+    // if the table is the same table as the parent, update don't create
+    $identifiedBy = [
+      $this->instance->getKeyName() => $this->instance->id
+      //TODO how to get the parent fk in here?
+      // ie when creating a comment we need to add post_id
+    ];
+    $data = array_merge($identifiedBy, $data);
+
+    return $this->instance->getTable() === (new $class())->getTable()
+      ? $class::updateOrCreate( $identifiedBy, $data )
+      : $class::create( $data );
   }
 
 

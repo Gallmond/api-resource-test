@@ -117,9 +117,6 @@ class ApiResourceTest extends TestCase
         
     }
 
-    /**
-     * @group restup
-     */
     public function testUpdateWithRelation(): void
     {
         $testPost = $this->testPost();
@@ -142,9 +139,6 @@ class ApiResourceTest extends TestCase
 
     }
 
-    /**
-     * @group rest
-     */
     public function testDelete(): void{
         $testPost = $this->testPost();
 
@@ -156,5 +150,44 @@ class ApiResourceTest extends TestCase
         $this->assertDatabaseCount(Post::class, 0);
 
     }
+
+    /**
+     * @group resta
+     */
+    public function testCreateWithManyRelation(): void
+    {
+        $request = [
+            'data' => [
+                'title' => 'a title',
+                'some content' => 'a title',
+                'comments' => [
+                    ['userId' => $this->user->id ,'content' => 'comment 1','likes' => 1,'dislikes' => 1],
+                    ['userId' => $this->user->id ,'content' => 'comment 2','likes' => 2,'dislikes' => 2],
+                    ['userId' => $this->user->id ,'content' => 'comment 3','likes' => 3,'dislikes' => 3],
+                ]
+            ],
+            'with' => ['comments']
+        ];
+
+        $response = $this->json('POST', route('posts.store'), $request);
+        dd($response->json());
+
+    }
+
+    public function testReadWithManyRelation(): void
+    {
+        
+    }
+
+    public function testUpdateWithManyRelation(): void
+    {
+        
+    }
+
+    public function testDeleteWithManyRelation(): void
+    {
+        
+    }
+
 
 }
