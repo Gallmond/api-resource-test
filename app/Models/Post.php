@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class Post extends Model
 {
     use HasFactory;
-    
+
     protected $table = 'posts';
 
     /**
@@ -35,6 +35,11 @@ class Post extends Model
         'analytics_dislikes',
     ];
 
+    protected array $hasRelations = [
+        'author' => User::class,
+        'analytics' => PostAnalytics::class,
+    ];
+
     /**
      * Who created this post
      *
@@ -54,5 +59,4 @@ class Post extends Model
     {
         return $this->hasOne(PostAnalytics::class, 'id', 'id');
     }
-
 }

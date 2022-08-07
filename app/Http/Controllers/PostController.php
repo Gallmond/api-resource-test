@@ -33,7 +33,7 @@ class PostController extends Controller
         $data = $request->get('data');
         $data['user_id'] = $user->id;
 
-        $post = Post::create($data);
+        $post = Post::create( $data );
 
         if($data['analytics']){
             PostAnalytics::find( $post->id )
@@ -41,7 +41,10 @@ class PostController extends Controller
         }
 
         if($request->has('with')){
-            $post->load($request->get('with'));
+            $post->load(array_intersect(
+                $request->get('with'),
+                Post::getRelations(),
+            ));
         }
 
         return (new PostResource($post))
@@ -55,9 +58,20 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show($id)
+    public function show(Request $request, $id)
     {
-        //
+
+        $relations = array_intersect(
+            $request->get('with', []),
+            Post::getRelations(),
+        );
+
+        $post = Post::with( $relations )
+            ->findOrFail( $id );
+        
+        return (new PostResource($post))
+            ->toResponse($request)
+            ->setStatusCode(200);
     }
 
     /**
@@ -69,7 +83,29 @@ class PostController extends Controller
      */
     public function update(Request $request, $id)
     {
-        //
+        $relations = array_intersect(
+            $request->get('with', []),
+            Post::getRelations(),
+        );
+
+        $post = Post::with( $relations )->findOrFail( $id );
+
+        $data = $request->get('data', []);
+
+        $post->update( array_intersect_key( Post::getFillable(), $data) );
+        
+        // update relations if set?
+        if($data['analytics']){
+            PostAnalytics::findOrFail( $post->id )
+                ->update(array_intersect_key(
+                    PostAnalytics::getFillable(),
+                    $data['analytics']
+                ));
+        }
+
+        return (new PostResource($post))
+            ->toResponse($request)
+            ->setStatusCode(201);
     }
 
     /**
@@ -80,6 +116,11 @@ class PostController extends Controller
      */
     public function destroy($id)
     {
-        //
+        Post::findOrFail( $id )->delete();
+
+        return response()
+            ->json(['success' => true])
+            ->setStatusCode(200);
     }
+
 }

@@ -46,7 +46,7 @@ class ApiResourceTest extends TestCase
         $response->assertStatus(201);
         assertArrayHasKey('data', $response->json());
 
-        dump($response->json());
+        dd($response->json());
 
 
         //READ
