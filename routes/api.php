@@ -27,4 +27,14 @@ Route::middleware('auth:api')->group(function(){
     ]);
 });
 
+Route::post('/test', function(Request $request){
+
+    $existingAll = $request->all();
+    $existingAll['data'] = array_merge($existingAll['data'], ['user_id' => 123]);
+    
+    $request->merge($existingAll);
+
+    return response()->json(['foo' => 'bar', 'all' => $request->all()]);
+})->name('test.test');
+
 
