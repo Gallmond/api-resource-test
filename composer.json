@@ -42,7 +42,7 @@
             "composer dump-autoload"
         ],
         "tt" : [
-            "./vendor/bin/phpunit"
+            "./vendor/bin/phpunit --testdox"
         ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",

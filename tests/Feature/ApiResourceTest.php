@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Post;
 use App\Models\User;
+use Database\Factories\PostFactory;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -21,14 +22,32 @@ class ApiResourceTest extends TestCase
 {
     use DatabaseMigrations;
 
-    public function testPostApiResourceController(): void
-    {
-        // test user
-        User::factory()->create([
-            'id' => 111
-        ]);
-        Passport::actingAs(User::find(111));
+    protected User $user;
 
+    public function setUp(): void
+    {
+        parent::setUp();
+
+        $this->user = User::factory()->create([
+            'id' => 111
+        ]);;
+
+        Passport::actingAs($this->user);
+    }
+
+    protected function testPost(array $attributes = []): Post
+    {
+        return (new PostFactory)->create(array_merge([
+            'title' => 'some title',
+            'content' => 'some content',
+            'analytics_views' => 111,
+            'analytics_favourites' => 222,
+            'analytics_dislikes' => 333,
+            'user_id' => $this->user->id,
+        ], $attributes));
+    }
+
+    public function testCreate(): void{
         // ----- CREATE
         $request = [
             'data' => [
@@ -51,7 +70,6 @@ class ApiResourceTest extends TestCase
 
         // check main post info
         $post = $response->json('data');
-        $postId = $response->json('data.id');
         $this->assertSame($request['data']['title'], $post['title']);
         $this->assertSame($request['data']['content'], $post['content']);
 
@@ -62,37 +80,39 @@ class ApiResourceTest extends TestCase
         $this->assertSame($reqAttr['analyticsViews'], $analytics['analyticsViews']);
         $this->assertSame($reqAttr['analyticsFavourites'], $analytics['analyticsFavourites']);
         $this->assertSame($reqAttr['analyticsDislikes'], $analytics['analyticsDislikes']);
-        
-        
-        // ----- READ
+    }
+
+    public function testRead(): void{
+        $testPost = $this->testPost();
 
         // get without relation
-        $response = $this->get(route('posts.show', ['post' => $postId]));
+        $response = $this->get(route('posts.show', ['post' => $testPost->id]));
         $response->assertStatus(200);
         $post = $response->json('data');
-        $this->assertSame($request['data']['title'], $post['title']);
-        $this->assertSame($request['data']['content'], $post['content']);
+        $this->assertSame($testPost->title, $post['title']);
+        $this->assertSame($testPost->content, $post['content']);
         $this->assertArrayNotHasKey('analytics', $post);
 
         // get with relation
         $queryString = Arr::query([ 'with' => ['analytics'] ]);
-        $uri = route('posts.show', ['post' => $postId]) . "?$queryString";
+        $uri = route('posts.show', ['post' => $testPost->id]) . "?$queryString";
         $response = $this->get($uri);
         $response->assertStatus(200);
         $this->assertArrayHasKey('analytics', $response->json('data'));
-        $analytics = $response->json('data.analytics');
+    }
 
-        // ----- UPDATE
-        
+    public function testUpdate(): void{
+        $testPost = $this->testPost();
+
         // change the content of the post
-        $url = route('posts.update', ['post' => $postId]);
+        $url = route('posts.update', ['post' => $testPost->id]);
         $data = [ 'data' => [ 'content' => 'New content!!!' ] ];
         $response = $this->json('PATCH', $url, $data);
         $response->assertStatus(200);
         $this->assertSame($data['data']['content'], $response->json('data.content'));
 
         // change the content of analytics through the post update
-        $url = route('posts.update', ['post' => $postId]);
+        $url = route('posts.update', ['post' => $testPost->id]);
         $data = [
             'data' => [ 'analytics' => [ 'analyticsDislikes' => 999 ] ],
             'with' => [ 'analytics' ],
@@ -100,9 +120,13 @@ class ApiResourceTest extends TestCase
         $response = $this->json('PATCH', $url, $data);
         $response->assertStatus(200);
         $this->assertSame($data['data']['analytics']['analyticsDislikes'], $response->json('data.analytics.analyticsDislikes'));
+    }
+
+    public function testDelete(): void{
+        $testPost = $this->testPost();
 
         //DELETE
-        $uri = route('posts.destroy', ['post' => $postId]);
+        $uri = route('posts.destroy', ['post' => $testPost->id]);
         $response = $this->delete($uri);
         $response->assertStatus(200);
         $this->assertSame(true, $response->json('data.success'));
