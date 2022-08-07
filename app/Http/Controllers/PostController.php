@@ -51,11 +51,7 @@ class PostController extends Controller
      */
     public function show(Request $request, $id)
     {
-        $post = Post::findOrFail( $id );
-
-        if($request->has('with')){
-            $post->load( $request->input('with') );
-        }
+        $post = $this->repo->read($id);
 
         return (new PostResource($post))
             ->toResponse($request)
@@ -71,18 +67,7 @@ class PostController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $post = Post::findOrFail( $id );
-
-        $post->updateOrFail( $request->input('data') );
-        
-        if($request->has('data.analytics')){
-            PostAnalytics::findOrFail( $post->id )
-                ->updateOrFail($request->input('data.analytics'));
-        }
-
-        if($request->has('with')){
-            $post->load( $request->input('with') );
-        }
+        $post = $this->repo->update( $request->input('data'), $id );
 
         return (new PostResource($post))
             ->toResponse($request)
@@ -97,11 +82,11 @@ class PostController extends Controller
      */
     public function destroy($id)
     {
-        Post::findOrFail( $id )->delete();
+        $success = $this->repo->delete( $id );
 
         return response()
-            ->json(['data' => ['success' => true]])
-            ->setStatusCode(200);
+            ->json(['data' => ['success' => $success]])
+            ->setStatusCode($success ? 200 : 500);
     }
 
 }

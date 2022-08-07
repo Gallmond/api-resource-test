@@ -3,20 +3,17 @@
 namespace Tests\Feature;
 
 use App\Models\Post;
+use App\Models\PostAnalytics;
 use App\Models\User;
 use Database\Factories\PostFactory;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Foundation\Testing\WithFaker;
 use Illuminate\Support\Arr;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
 
-use function PHPUnit\Framework\assertArrayHasKey;
-use function PHPUnit\Framework\assertSame;
 
 /**
- * @group rest
+ * @group restall
  */
 class ApiResourceTest extends TestCase
 {
@@ -82,7 +79,7 @@ class ApiResourceTest extends TestCase
         $this->assertSame($reqAttr['analyticsDislikes'], $analytics['analyticsDislikes']);
     }
 
-    public function testRead(): void{
+    public function testReadNoRelation(): void{
         $testPost = $this->testPost();
 
         // get without relation
@@ -92,6 +89,13 @@ class ApiResourceTest extends TestCase
         $this->assertSame($testPost->title, $post['title']);
         $this->assertSame($testPost->content, $post['content']);
         $this->assertArrayNotHasKey('analytics', $post);
+
+        
+    }
+
+    public function testReadWithRelation(): void
+    {
+        $testPost = $this->testPost();
 
         // get with relation
         $queryString = Arr::query([ 'with' => ['analytics'] ]);
@@ -110,18 +114,37 @@ class ApiResourceTest extends TestCase
         $response = $this->json('PATCH', $url, $data);
         $response->assertStatus(200);
         $this->assertSame($data['data']['content'], $response->json('data.content'));
+        
+    }
+
+    /**
+     * @group restup
+     */
+    public function testUpdateWithRelation(): void
+    {
+        $testPost = $this->testPost();
 
         // change the content of analytics through the post update
         $url = route('posts.update', ['post' => $testPost->id]);
         $data = [
-            'data' => [ 'analytics' => [ 'analyticsDislikes' => 999 ] ],
+            'data' => [
+                'title' => 'a coool title',
+                'analytics' => [ 'id' => $testPost->id, 'analyticsDislikes' => 999 ]
+            ],
             'with' => [ 'analytics' ],
         ];
         $response = $this->json('PATCH', $url, $data);
         $response->assertStatus(200);
+        $this->assertSame($data['data']['title'], $response->json('data.title'));
         $this->assertSame($data['data']['analytics']['analyticsDislikes'], $response->json('data.analytics.analyticsDislikes'));
+        $this->assertDatabaseHas(Post::class, ['title' => 'a coool title']);
+        $this->assertDatabaseHas(PostAnalytics::class, ['analytics_dislikes' => 999]);
+
     }
 
+    /**
+     * @group rest
+     */
     public function testDelete(): void{
         $testPost = $this->testPost();
 
