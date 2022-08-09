@@ -10,19 +10,13 @@ use App\Models\User;
 class PostCrudRepo extends AutoCrudRepo
 {
   protected string $model = Post::class;
-  protected array $modelRelations = [
-    'author' => User::class,
-    'analytics' => PostAnalytics::class,
-    'comments' => Comment::class,
-  ];
 
   /**
    * 0: Model class
    * 1: column on this repo's model that points at the related model
    * 2: related model's PK column
-   * //TODO implement this
    */
-  protected array $tempRelations = [
+  protected array $modelRelations = [
     'author' => [User::class, 'user_id'],
     'analytics' => [PostAnalytics::class, 'id'],
     'comments' => [Comment::class, 'post_id'],

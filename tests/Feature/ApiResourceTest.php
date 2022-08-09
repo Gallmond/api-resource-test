@@ -11,10 +11,6 @@ use Illuminate\Support\Arr;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
 
-
-/**
- * @group restall
- */
 class ApiResourceTest extends TestCase
 {
     use DatabaseMigrations;
@@ -151,9 +147,6 @@ class ApiResourceTest extends TestCase
 
     }
 
-    /**
-     * @group resta
-     */
     public function testCreateWithManyRelation(): void
     {
         $request = [
@@ -170,13 +163,25 @@ class ApiResourceTest extends TestCase
         ];
 
         $response = $this->json('POST', route('posts.store'), $request);
-        dd($response->json());
+        $response->assertStatus(201);
 
+        $this->assertArrayHasKey('comments', $response->json('data'));
+        $this->assertCount(3, $response->json('data.comments'));
+        
+        $collection = collect($response->json('data.comments'));
+        $this->assertTrue($collection->contains('content', 'comment 1'));
+        $this->assertTrue($collection->contains('content', 'comment 2'));
+        $this->assertTrue($collection->contains('content', 'comment 3'));
     }
 
+    //TODO continue here
     public function testReadWithManyRelation(): void
     {
-        
+        // user
+        // post
+        // comments
+
+
     }
 
     public function testUpdateWithManyRelation(): void

@@ -79,7 +79,7 @@ abstract class AutoCrudRepo {
   protected function updateRelatedModels(): void
   {
     /** @var Model $class */
-    foreach($this->modelRelations as $name => $class){
+    foreach($this->modelRelations as $name => [$class, $key]){
       if(!$this->request->has("data.$name")){
         continue;
       }
@@ -111,7 +111,6 @@ abstract class AutoCrudRepo {
     ];
 
     $data = array_merge($identifiedBy, $data);
-    dump('updateRelatedModel $data', $data);
         
     $createdOrUpdated = $class::updateOrCreate($identifiedBy, $data);
     if(!$createdOrUpdated->exists){
@@ -131,33 +130,38 @@ abstract class AutoCrudRepo {
   {
     $created = [];
 
-    foreach($this->modelRelations as $name => $class){
+    foreach($this->modelRelations as $name => [$class, $key]){
       if(!$this->request->has( "data.$name" )){
         continue;
       }
       assert($class instanceof Model);
       $data = $this->request->input(  "data.$name" );
 
+      $modelKeyName = (new $class)->getKeyName();
+
       if(array_is_list($data)){
         foreach($data as $datum){
-          $created[] = $this->createRelatedModel( $class, $datum );
+          $identifiedBy = array_filter([
+            $key => $this->instance->getKey(),
+            $modelKeyName => $datum[ $modelKeyName ] ?? null
+          ]);
+          $created[] = $this->createRelatedModel( $class, $identifiedBy, $datum );
         }
       }else{
-        $created[] = $this->createRelatedModel( $class, $data );
+        $identifiedBy = array_filter([
+          $key => $this->instance->getKey(),
+          $modelKeyName => $data[ $modelKeyName ] ?? null
+        ]);
+        $created[] = $this->createRelatedModel( $class, $identifiedBy, $data );
       }
       
     }
     return $created;
   }
 
-  public function createRelatedModel(string $class, array $data): Model
+  public function createRelatedModel(string $class, array $identifiedBy, array $data): Model
   {
     // if the table is the same table as the parent, update don't create
-    $identifiedBy = [
-      $this->instance->getKeyName() => $this->instance->id
-      //TODO how to get the parent fk in here?
-      // ie when creating a comment we need to add post_id
-    ];
     $data = array_merge($identifiedBy, $data);
 
     return $this->instance->getTable() === (new $class())->getTable()
