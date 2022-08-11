@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -25,6 +26,7 @@ class PostFactory extends Factory
             'content' => fake()->text(),
             'created_at' => now(),
             'updated_at' => now(),
+            'user_id' => User::factory()->create()->id
         ];
     }
 }

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Models\Comment;
 use App\Models\Post;
 use App\Models\PostAnalytics;
 use App\Models\User;
@@ -121,7 +122,7 @@ class ApiResourceTest extends TestCase
         $url = route('posts.update', ['post' => $testPost->id]);
         $data = [
             'data' => [
-                'title' => 'a coool title',
+                'title' => 'a cool title',
                 'analytics' => [ 'id' => $testPost->id, 'analyticsDislikes' => 999 ]
             ],
             'with' => [ 'analytics' ],
@@ -130,7 +131,7 @@ class ApiResourceTest extends TestCase
         $response->assertStatus(200);
         $this->assertSame($data['data']['title'], $response->json('data.title'));
         $this->assertSame($data['data']['analytics']['analyticsDislikes'], $response->json('data.analytics.analyticsDislikes'));
-        $this->assertDatabaseHas(Post::class, ['title' => 'a coool title']);
+        $this->assertDatabaseHas(Post::class, ['title' => 'a cool title']);
         $this->assertDatabaseHas(PostAnalytics::class, ['analytics_dislikes' => 999]);
 
     }
@@ -174,24 +175,90 @@ class ApiResourceTest extends TestCase
         $this->assertTrue($collection->contains('content', 'comment 3'));
     }
 
-    //TODO continue here
+    /**
+     * @group temp
+     */
     public function testReadWithManyRelation(): void
     {
-        // user
         // post
+        $post = Post::factory()->create([
+            'user_id' => $this->user->id
+        ]);
+
         // comments
+        Comment::factory()->create(['post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        Comment::factory()->create(['post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        Comment::factory()->create(['post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
 
+        $queryString = Arr::query([ 'with' => ['comments'] ]);
+        $uri = route('posts.show', ['post' => $post->id]) . "?$queryString";
+        $response = $this->get($uri);
+        $response->assertStatus(200);
 
+        $this->assertArrayHasKey('comments', $response->json('data'));
+        $this->assertCount(3, $response->json('data.comments'));
     }
 
+    /**
+     * @group temp
+     */
     public function testUpdateWithManyRelation(): void
     {
-        
+        // post
+        $post = Post::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'start title',
+        ]);
+
+        // comments
+        Comment::factory()->create(['content' => 'comment one','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        $commentTwo = Comment::factory()->create(['content' => 'comment two','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        Comment::factory()->create(['content' => 'comment three','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+
+        $request = [
+            'with' => ['comments'],
+            'data' => [
+                'title' => 'new title',
+                'comments' => [ 'id' => $commentTwo->id, 'content' => 'comment two updated' ]
+            ]
+        ];
+        $response = $this->json('PATCH', route('posts.update', ['post'=>$post->id]), $request);
+        if($response->exception){
+            dd($response->exception);
+        }
+        $response->assertStatus(200);
+
+        // check the count of comments is the same
+        $this->assertArrayHasKey('comments', $response->json('data'));
+        $this->assertCount(3, $response->json('data.comments'));
+
+        // check we updated the post title
+        $this->assertSame('new title', $response->json('data.title'));
+
+        // check we updated the specified comment
+        $second = array_filter($response->json('data.comments'), function(array $item) use ($commentTwo){
+            return $item['id'] === $commentTwo->id;
+        });
+        $second = array_values(array_filter($second)); // resets array keys
+        $this->assertSame('comment two updated', $second[0]['content']);
+
+
     }
 
     public function testDeleteWithManyRelation(): void
     {
-        
+         // post
+         $post = Post::factory()->create([
+            'user_id' => $this->user->id,
+            'title' => 'start title',
+        ]);
+
+        // comments
+        Comment::factory()->create(['content' => 'comment one','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        $commentTwo = Comment::factory()->create(['content' => 'comment two','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        Comment::factory()->create(['content' => 'comment three','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+
+        $this->markTestSkipped('//TODO write this. Should it be able to cascade delete the comments? Maybe a hard/soft delete distinction');
     }
 
 
