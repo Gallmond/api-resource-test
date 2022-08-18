@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Interfaces\HasAutoCRUDMethods;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -72,7 +73,6 @@ abstract class AutoCrudRepo {
 
   public function delete(mixed $id): bool
   {
-    //TODO this will need to handle relations
     return $this->model::findOrFail( $id )->delete();
   }
 

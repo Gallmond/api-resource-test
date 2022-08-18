@@ -8,13 +8,14 @@ use App\Models\PostAnalytics;
 use App\Models\User;
 use Database\Factories\PostFactory;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Arr;
 use Laravel\Passport\Passport;
 use Tests\TestCase;
 
 class ApiResourceTest extends TestCase
 {
-    use DatabaseMigrations;
+    use DatabaseMigrations, RefreshDatabase;
 
     protected User $user;
 
@@ -245,20 +246,53 @@ class ApiResourceTest extends TestCase
 
     }
 
+    /**
+     * @group temp
+     */
     public function testDeleteWithManyRelation(): void
     {
          // post
-         $post = Post::factory()->create([
+        $post = Post::factory()->create([
             'user_id' => $this->user->id,
-            'title' => 'start title',
+            'title' => 'this post should get deleted',
         ]);
 
         // comments
-        Comment::factory()->create(['content' => 'comment one','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
-        $commentTwo = Comment::factory()->create(['content' => 'comment two','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
-        Comment::factory()->create(['content' => 'comment three','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        $commentOne = Comment::factory()->create(['content' => 'del comment one','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        $commentTwo = Comment::factory()->create(['content' => 'del comment two','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
+        $commentThree = Comment::factory()->create(['content' => 'del comment three','post_id'=>$post->id, 'user_id' => User::factory()->create()->id]);
 
-        $this->markTestSkipped('//TODO write this. Should it be able to cascade delete the comments? Maybe a hard/soft delete distinction');
+        // assert comments are on post
+        $this->assertCount(3, $post->comments);
+
+        // assert related post is correct
+        foreach([$commentOne, $commentTwo, $commentThree] as $comment){
+            assert($comment instanceof Comment);
+            $this->assertSame( $post->title, $comment->post->title );
+        }
+
+        // make the delete call
+        $response = $this->json('DELETE', route('posts.destroy', ['post' => $post->id]));
+        $response->assertStatus(200);
+
+        // check that the post is deleted
+        $this->assertDatabaseMissing(Post::class, [
+            'id' => $post->id,
+            'user_id' => $this->user->id,
+            'title' => 'this post should get deleted',
+        ]);
+
+        // check that the comments are deleted
+        $this->assertDatabaseMissing(Comment::class, [
+            'content' => 'del comment one'
+        ]);
+        $this->assertDatabaseMissing(Comment::class, [
+            'content' => 'del comment two'
+        ]);
+        $this->assertDatabaseMissing(Comment::class, [
+            'content' => 'del comment three'
+        ]);
+        
     }
 
 

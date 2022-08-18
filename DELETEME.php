@@ -1,20 +1,19 @@
 <?php
 
-$arr1 = [
-  'some' => 'aaa' ,
-  'keys' => 'bbb' ,
-  'here' => 'ccc' 
-];
+interface FooInterface{
+  public function returnString():string;
+}
 
-$arr2 = [
-  'array' => 'one',
-  'with' => 'two',
-  'some' => 'three',
-  'keys' => 'four',
-  'fizz' => 'five',
-];
+class FooClass implements FooInterface{
+  public function returnString(): string
+  {
+    return 'aaaa';
+  }
+}
 
-print_r(array_intersect_key(
-  $arr2, $arr1 
-));
-
+foreach(class_implements(FooClass::class) as $key => $val){
+  print_r([
+    'key' => $key,
+    'val' => $val,
+  ]);
+}

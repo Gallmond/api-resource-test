@@ -44,6 +44,9 @@
         "tt" : [
             "./vendor/bin/phpunit --testdox"
         ],
+        "ttg" : [
+            "./vendor/bin/phpunit --testdox --group=temp --stop-on-failure"
+        ],
         "post-autoload-dump": [
             "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
             "@php artisan package:discover --ansi"
